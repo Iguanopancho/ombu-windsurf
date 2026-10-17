@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El Ombú — Spot en vivo</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d1b2a;--surface:#132233;--border:#1e3348;--accent:#00b4d8;--accent2:#48cae4;
+    --text:#e0f0f8;--muted:#6b8fa8;--green:#2ec47a;--yellow:#f4c948;--red:#f45c48;--radius:12px;
+    box-sizing:border-box;
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *,*::before,*::after{box-sizing:inherit;margin:0;padding:0;}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  body{display:flex;flex-direction:column;min-height:100%;}
+
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;}
+  .logo-icon{width:36px;height:36px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+  .header-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;}
+  .header-sub{font-size:12px;color:var(--muted);margin-top:1px;}
+  .semaforo{display:flex;align-items:center;gap:8px;margin-left:auto;background:var(--bg);border-radius:20px;padding:6px 14px 6px 10px;border:1px solid var(--border);}
+  .semaforo-dot{width:10px;height:10px;border-radius:50%;background:var(--muted);}
+  .semaforo-dot.verde{background:var(--green);animation:pulse 2s infinite;}
+  .semaforo-dot.amarillo{background:var(--yellow);}
+  .semaforo-dot.rojo{background:var(--red);}
+  .semaforo-label{font-size:13px;font-weight:600;}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  main{flex:1;padding:16px;display:flex;flex-direction:column;gap:16px;max-width:900px;width:100%;margin:0 auto;}
+
+  /* Tabs */
+  .cam-tabs{display:flex;gap:8px;}
+  .cam-tab{background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted);}
+  .cam-tab.active{background:#0a1520;color:var(--accent);}
+  .cam-wrapper{background:#0a1520;border-radius:0 var(--radius) var(--radius) var(--radius);border:1px solid var(--border);overflow:hidden;position:relative;}
+  .cam-panel{display:none;}
+  .cam-panel.active{display:block;}
+  .cam-panel iframe{width:100%;aspect-ratio:16/9;display:block;border:none;}
+  .windy-player-wrap{width:100%;aspect-ratio:16/9;position:relative;}
+  .webcam-live-badge{position:absolute;top:10px;left:10px;background:rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.15);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:600;color:#fff;display:flex;align-items:center;gap:6px;pointer-events:none;z-index:10;}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse 1.2s infinite;}
+
+  /* Grid métricas */
+  .metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+  @media(min-width:600px){.metrics-grid{grid-template-columns:repeat(4,1fr);}}
+
+  .metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;display:flex;flex-direction:column;gap:4px;}
+  .metric-icon{font-size:18px;}
+  .metric-label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.07em;text-transform:uppercase;}
+  .metric-value{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:700;line-height:1;}
+  .metric-unit{font-size:13px;color:var(--muted);}
+  .metric-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+  .source-badge{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;margin-top:4px;width:fit-content;}
+  .badge-real{background:#0a2818;color:var(--green);border:1px solid #1a5030;}
+  .badge-fc{background:#1e1a08;color:var(--yellow);border:1px solid #5a4a10;}
+
+  /* Norden secundario */
+  .norden-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+  .norden-title{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+  .norden-sub{font-size:11px;font-weight:400;opacity:.7;flex:1;}
+  .norden-ext{font-size:11px;color:var(--accent);text-decoration:none;margin-left:auto;}
+  .norden-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+  .norden-item{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;text-align:center;}
+  .norden-label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.05em;margin-bottom:4px;}
+  .norden-val{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;color:var(--text);}
+
+  /* Dirección del viento con brújula */
+  .wind-dir-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:20px;}
+  .compass-wrap{flex-shrink:0;position:relative;width:90px;height:90px;}
+  .compass-ring{width:90px;height:90px;border-radius:50%;border:2px solid var(--border);position:relative;background:radial-gradient(circle, #1a2f45 0%, #0d1b2a 100%);}
+  .compass-labels{position:absolute;inset:0;}
+  .compass-n,.compass-s,.compass-e,.compass-o{position:absolute;font-size:10px;font-weight:700;color:var(--muted);}
+  .compass-n{top:3px;left:50%;transform:translateX(-50%);color:var(--red);}
+  .compass-s{bottom:3px;left:50%;transform:translateX(-50%);}
+  .compass-e{right:4px;top:50%;transform:translateY(-50%);}
+  .compass-o{left:4px;top:50%;transform:translateY(-50%);}
+  .compass-arrow{position:absolute;top:50%;left:50%;transform-origin:center bottom;transition:transform 0.8s ease;}
+  .compass-arrow svg{display:block;}
+  .compass-center{position:absolute;top:50%;left:50%;width:8px;height:8px;background:var(--accent);border-radius:50%;transform:translate(-50%,-50%);z-index:2;}
+
+  .dir-info{flex:1;}
+  .dir-cardinal{font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:700;line-height:1;color:var(--text);}
+  .dir-degrees{font-size:16px;color:var(--muted);margin-top:2px;}
+  .dir-desc{font-size:12px;color:var(--muted);margin-top:6px;}
+
+  /* Mareas */
+  .tides-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .tides-now{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:4px;}
+  .tide-stat{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;}
+  .tide-label{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px;}
+  .tide-value{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:700;line-height:1;}
+  .tide-unit{font-size:11px;color:var(--muted);margin-top:2px;}
+  .tide-trend{font-size:28px;line-height:1;padding:4px 0;}
+  .tide-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;}
+  .tide-link{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:7px 12px;font-size:12px;font-weight:600;color:var(--accent);text-decoration:none;flex:1;text-align:center;white-space:nowrap;}
+  .tide-link:hover{border-color:var(--accent);}
+
+  /* Bitácora */
+  .log-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .section-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+  .btn{background:var(--accent);color:#0d1b2a;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+  .btn:active{background:var(--accent2);}
+  .log-form{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+  .log-form-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .log-form-field{flex:1;min-width:120px;}
+  .log-form-field label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px;}
+  .log-form input,.log-form textarea{background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:8px 12px;width:100%;outline:none;font-family:'Inter',sans-serif;}
+  .log-form input:focus,.log-form textarea:focus{border-color:var(--accent);}
+  .log-form textarea{resize:vertical;min-height:60px;}
+  .log-entries{display:flex;flex-direction:column;gap:8px;}
+  .log-entry{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
+  .log-entry-info{flex:1;}
+  .log-entry-date{font-size:11px;color:var(--muted);margin-bottom:3px;}
+  .log-entry-main{font-size:14px;font-weight:500;}
+  .log-entry-note{font-size:12px;color:var(--muted);margin-top:3px;}
+  .log-entry-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+  .tag{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 8px;font-size:11px;color:var(--muted);}
+  .log-delete{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;padding:2px;}
+
+  .error-banner{background:#2a1515;border:1px solid #5a2020;border-radius:8px;padding:10px 14px;font-size:12px;color:#f4a0a0;display:none;}
+  .error-banner.visible{display:block;}
+  footer{text-align:center;padding:14px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-icon">🏄</div>
+  <div>
+    <div class="header-title">El Ombú</div>
+    <div class="header-sub">Acassuso · San Isidro</div>
+  </div>
+  <div class="semaforo">
+    <div class="semaforo-dot" id="semDot"></div>
+    <span class="semaforo-label" id="semLabel">Cargando…</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Cámaras -->
+  <div>
+    <div class="cam-tabs">
+      <div class="cam-tab active" onclick="switchCam('windy')">📷 Windy · Náutica SI</div>
+      <div class="cam-tab" onclick="switchCam('youtube')">📺 YouTube · El Ombú</div>
+    </div>
+    <div class="cam-wrapper">
+      <div class="cam-panel active" id="panel-windy">
+        <div class="windy-player-wrap">
+          <a name="windy-webcam-timelapse-player" data-id="1735938641" data-play="day"
+             href="https://windy.com/webcams/1735938641" target="_blank"
+             style="display:block;width:100%;aspect-ratio:16/9;">Acassuso · Náutica San Isidro</a>
+          <script async type="text/javascript" src="https://webcams.windy.com/webcams/public/embed/script/player.js"></script>
+        </div>
+        <div class="webcam-live-badge"><div class="live-dot"></div> EN VIVO · Windy</div>
+      </div>
+      <div class="cam-panel" id="panel-youtube">
+        <iframe src="https://www.youtube.com/embed/4DvSXdhtKq4?autoplay=1&mute=1&controls=1"
+          allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+        <div class="webcam-live-badge"><div class="live-dot"></div> EN VIVO · YouTube</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-banner" id="errorBanner">⚠️ Sin datos del Pilote Norden (CARP). Mostrando pronóstico Open-Meteo.</div>
+
+  <!-- Métricas -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-icon">💨</div>
+      <div class="metric-label">Viento promedio</div>
+      <div class="metric-value" id="windSpeed">—</div>
+      <div class="metric-unit">nudos</div>
+      <div class="metric-sub" id="windSubtext">—</div>
+      <span class="source-badge badge-real" id="windBadge">● CNSI real</span>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">⚡</div>
+      <div class="metric-label">Ráfaga máx.</div>
+      <div class="metric-value" id="windGusts">—</div>
+      <div class="metric-unit">nudos</div>
+      <div class="metric-sub" id="gustsDiff">—</div>
+      <span class="source-badge badge-real" id="gustBadge">● CNSI real</span>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">🌡️</div>
+      <div class="metric-label">Temperatura</div>
+      <div class="metric-value" id="temp">—</div>
+      <div class="metric-unit">°C</div>
+      <div class="metric-sub" id="feelsLike">—</div>
+      <span class="source-badge badge-real" id="tempBadge">● CNSI real</span>
+    </div>
+    <div class="metric-card">
+      <div class="metric-icon">🕐</div>
+      <div class="metric-label">Actualización</div>
+      <div class="metric-value" style="font-size:22px;padding-top:6px;" id="lastUpdateVal">—</div>
+      <div class="metric-sub" id="lastUpdateSub">—</div>
+      <span class="source-badge badge-real" id="updateBadge">● medición real</span>
+    </div>
+  </div>
+
+  <!-- Norden CARP — referencia secundaria -->
+  <div class="norden-card">
+    <div class="norden-title">⚓ Pilote Norden <span class="norden-sub">CARP · Canal del Río de la Plata</span>
+      <a href="https://www.comisionriodelaplata.org/servicios_main.php?sid=VM" target="_blank" class="norden-ext">Ver sitio →</a>
+    </div>
+    <div class="norden-grid">
+      <div class="norden-item"><div class="norden-label">Viento</div><div class="norden-val" id="nordenWind">—</div></div>
+      <div class="norden-item"><div class="norden-label">Ráfaga</div><div class="norden-val" id="nordenGust">—</div></div>
+      <div class="norden-item"><div class="norden-label">Dirección</div><div class="norden-val" id="nordenDir">—</div></div>
+      <div class="norden-item"><div class="norden-label">Act.</div><div class="norden-val" id="nordenTime">—</div></div>
+    </div>
+  </div>
+
+  <!-- Dirección del viento con brújula -->
+  <div class="wind-dir-card">
+    <div class="compass-wrap">
+      <div class="compass-ring">
+        <div class="compass-labels">
+          <span class="compass-n">N</span>
+          <span class="compass-s">S</span>
+          <span class="compass-e">E</span>
+          <span class="compass-o">O</span>
+        </div>
+        <!-- Flecha apunta hacia donde sopla el viento (desde esa dirección) -->
+        <div class="compass-arrow" id="compassArrow" style="transform:translate(-50%,-100%) rotate(0deg);top:50%;left:50%;">
+          <svg width="18" height="44" viewBox="0 0 18 44">
+            <!-- Punta roja (arriba = norte cuando no girada) -->
+            <polygon points="9,0 16,22 9,18 2,22" fill="#f45c48"/>
+            <!-- Cola blanca (abajo) -->
+            <polygon points="9,44 16,22 9,26 2,22" fill="#e0f0f8" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="compass-center"></div>
+      </div>
+    </div>
+    <div class="dir-info">
+      <div class="dir-cardinal" id="dirCardinal">—</div>
+      <div class="dir-degrees" id="dirDegrees">— °</div>
+      <div class="dir-desc" id="dirDesc">Esperando datos…</div>
+    </div>
+  </div>
+
+  <!-- Mareas -->
+  <div class="tides-card" id="tidesCard">
+    <div class="section-title">🌊 Mareas — Río de la Plata</div>
+    <div class="tides-now">
+      <div class="tide-stat">
+        <div class="tide-label">Altura actual</div>
+        <div class="tide-value" id="tideHeight">—</div>
+        <div class="tide-unit">metros</div>
+      </div>
+      <div class="tide-stat">
+        <div class="tide-label">Tendencia</div>
+        <div class="tide-trend" id="tideTrend">—</div>
+      </div>
+      <div class="tide-stat">
+        <div class="tide-label">Próxima</div>
+        <div class="tide-value" id="tideNext">—</div>
+        <div class="tide-unit" id="tideNextLabel">—</div>
+      </div>
+    </div>
+    <!-- Gráfico de marea del día -->
+    <canvas id="tideChart" height="80" style="width:100%;margin:12px 0 8px;"></canvas>
+    <!-- Links externos -->
+    <div class="tide-links">
+      <a href="http://tidesud.com/6832_JDN_home.html" target="_blank" class="tide-link">📊 JDN Mareas</a>
+      <a href="https://www.mareasargentinas.com.ar/" target="_blank" class="tide-link">🇦🇷 Mareas Argentinas</a>
+      <a href="http://www.hidro.gov.ar/oceanografia/tmareas/form_tmareas.asp" target="_blank" class="tide-link">⚓ Tabla SHN</a>
+    </div>
+  </div>
+
+  <!-- Bitácora -->
+  <div class="log-card">
+    <div class="section-title">📋 Bitácora de sesiones</div>
+    <div class="log-form">
+      <div class="log-form-row">
+        <div class="log-form-field"><label>Fecha</label><input type="date" id="logFecha"></div>
+        <div class="log-form-field"><label>Vela (m²)</label><input type="number" id="logVela" placeholder="6.5" step="0.5"></div>
+        <div class="log-form-field"><label>Viento (kt)</label><input type="number" id="logViento" placeholder="12"></div>
+        <div class="log-form-field"><label>Duración</label><input type="text" id="logDuracion" placeholder="2h"></div>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:4px;">Notas</label>
+        <textarea id="logNotas" placeholder="¿Cómo estuvo la sesión?"></textarea>
+      </div>
+      <button class="btn" onclick="guardarSesion()">Guardar sesión</button>
+    </div>
+    <div class="log-entries" id="logEntries"></div>
+  </div>
+
+</main>
+
+<footer>Viento principal: CNSI (ThingSpeak) · Referencia: Norden CARP · Mareas: Open-Meteo · Cámara: Windy</footer>
+
+<script>
+const DIRS=['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSO','SO','OSO','O','ONO','NO','NNO'];
+function dirLabel(d){return DIRS[Math.round(parseFloat(d)/22.5)%16];}
+
+// ── Fuentes ───────────────────────────────────────────────────
+const CARP_URL = 'https://meteo.comisionriodelaplata.org/ecsCommand.php';
+
+function switchCam(which){
+  document.querySelectorAll('.cam-tab').forEach((t,i)=>{
+    t.classList.toggle('active',(i===0&&which==='windy')||(i===1&&which==='youtube'));
+  });
+  document.getElementById('panel-windy').classList.toggle('active',which==='windy');
+  document.getElementById('panel-youtube').classList.toggle('active',which==='youtube');
+}
+
+// ── CNSI ThingSpeak (principal) ───────────────────────────────
+async function fetchStation(){
+  try{
+    const r = await fetch(`https://api.thingspeak.com/channels/1506798/feeds/last.json?timezone=America%2FArgentina%2FBuenos_Aires`);
+    const d = await r.json();
+    const wind  = parseFloat(d.field3);
+    const gusts = parseFloat(d.field2);
+    const dir   = parseFloat(d.field4);
+    const temp  = parseFloat(d.field5);
+    const hum   = parseFloat(d.field6);
+    const ts    = new Date(d.created_at);
+
+    document.getElementById('windSpeed').textContent   = isNaN(wind)?'—':wind.toFixed(1);
+    document.getElementById('windGusts').textContent   = isNaN(gusts)?'—':gusts.toFixed(1);
+    document.getElementById('gustsDiff').textContent   = (!isNaN(gusts)&&!isNaN(wind))?`+${(gusts-wind).toFixed(1)} sobre media`:'—';
+    document.getElementById('windSubtext').textContent = !isNaN(dir)?`Dir: ${dirLabel(dir)}`:'—';
+    document.getElementById('temp').textContent        = isNaN(temp)?'—':Math.round(temp);
+    document.getElementById('feelsLike').textContent   = !isNaN(hum)?`Humedad: ${Math.round(hum)}%`:'—';
+    document.getElementById('lastUpdateVal').textContent = ts.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('lastUpdateSub').textContent = ts.toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'});
+
+    ['windBadge','gustBadge','tempBadge','updateBadge'].forEach(id=>{
+      document.getElementById(id).textContent='● CNSI real';
+      document.getElementById(id).className='source-badge badge-real';
+    });
+
+    if(!isNaN(dir)) updateCompass(dir, wind);
+    document.getElementById('errorBanner').classList.remove('visible');
+    actualizarSemaforo(wind, gusts);
+
+  }catch(e){
+    console.warn('CNSI error:', e);
+    document.getElementById('errorBanner').classList.add('visible');
+    fetchFallback();
+  }
+}
+
+// ── CARP Pilote Norden — via proxy CORS ──────────────────────
+async function fetchNorden(){
+  // Intentamos directo primero, si falla usamos proxy
+  const CARP_TARGET = `${CARP_URL}?c=telemetry%2FupdateTelemetry&s=${Math.random()}`;
+  const PROXY = `https://api.allorigins.win/raw?url=`;
+  const BODY = 'p=2';
+
+  let text = null;
+
+  // Intento 1: directo
+  try{
+    const r = await fetch(CARP_TARGET,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:BODY});
+    text = await r.text();
+  }catch(e1){
+    // Intento 2: via proxy GET (allorigins no soporta POST, mandamos la URL con params)
+    try{
+      const targetUrl = encodeURIComponent(`${CARP_URL}?c=telemetry%2FupdateTelemetry&s=${Math.random()}&p=2`);
+      const r2 = await fetch(`${PROXY}${targetUrl}`);
+      text = await r2.text();
+    }catch(e2){
+      // Intento 3: corsproxy.io
+      try{
+        const r3 = await fetch(`https://corsproxy.io/?${encodeURIComponent(CARP_TARGET)}`,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:BODY});
+        text = await r3.text();
+      }catch(e3){ console.warn('Norden: todos los proxies fallaron'); return; }
+    }
+  }
+
+  try{
+    const jsonMatch = text.match(/JSON\*\*(\{.*\})/s);
+    if(!jsonMatch) throw new Error('No JSON en respuesta');
+    const data = JSON.parse(jsonMatch[1]);
+
+    // Viento
+    const windHtml = decodeURIComponent(data.wind.latest);
+    const windVals = [...windHtml.matchAll(/class="rowAcol[AB]">([^<]+)</g)].map(m=>m[1].trim());
+    const nWind = parseFloat(windVals[1]);
+    const nGust = parseFloat(windVals[2]);
+    const nDir  = parseFloat(windVals[4]);
+    const nTime = windVals[0];
+
+    // Marea
+    const tideHtml   = decodeURIComponent(data.tide.latest);
+    const tideVals   = [...tideHtml.matchAll(/class="rowAcol[AB]">([^<]+)</g)].map(m=>m[1].trim());
+    const tideHeight = parseFloat(tideVals[1]);
+    const tideSeries = data.tide.chart.series[0].data;
+    const lastTide   = parseFloat(tideSeries[tideSeries.length-1][1]);
+    const prevTide   = parseFloat(tideSeries[tideSeries.length-5]?.[1]||lastTide);
+    const tideTrend  = lastTide>prevTide+0.01?'↑':lastTide<prevTide-0.01?'↓':'→';
+
+    // UI Norden
+    const ts = new Date(nTime.replace(' ','T')+'-03:00');
+    document.getElementById('nordenWind').textContent = isNaN(nWind)?'—':`${nWind.toFixed(1)} kt`;
+    document.getElementById('nordenGust').textContent = isNaN(nGust)?'—':`${nGust.toFixed(1)} kt`;
+    document.getElementById('nordenDir').textContent  = !isNaN(nDir)?`${dirLabel(nDir)} ${Math.round(nDir)}°`:'—';
+    document.getElementById('nordenTime').textContent = ts.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+
+    // Marea real del Norden → sección de mareas
+    if(!isNaN(tideHeight)){
+      document.getElementById('tideHeight').textContent = tideHeight.toFixed(2);
+      document.getElementById('tideTrend').textContent  = tideTrend;
+      findNextTideExtreme(tideSeries);
+      const now=Date.now();
+      const ci=tideSeries.reduce((ci,p,i)=>Math.abs(p[0]-now)<Math.abs(tideSeries[ci][0]-now)?i:ci,0);
+      drawTideChartFromSeries(tideSeries,ci);
+    }
+  }catch(e){ console.warn('Norden parse error:',e); }
+}
+
+function findNextTideExtreme(series){
+  const now=Date.now();
+  let ci=series.reduce((ci,p,i)=>Math.abs(p[0]-now)<Math.abs(series[ci][0]-now)?i:ci,0);
+  for(let i=ci+1;i<series.length-1;i++){
+    const prev=parseFloat(series[i-1][1]),curr=parseFloat(series[i][1]),next=parseFloat(series[i+1][1]);
+    if((curr>prev&&curr>next)||(curr<prev&&curr<next)){
+      const t=new Date(series[i][0]);
+      document.getElementById('tideNext').textContent=curr.toFixed(2)+' m';
+      document.getElementById('tideNextLabel').textContent=`${curr>prev?'Pleamar':'Bajamar'} ~${t.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})}`;
+      return;
+    }
+  }
+}
+
+function drawTideChartFromSeries(series,currentIdx){
+  const canvas=document.getElementById('tideChart');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*window.devicePixelRatio||600;
+  canvas.height=80*window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio,window.devicePixelRatio);
+  const W=canvas.offsetWidth,H=80;
+  const vals=series.map(p=>parseFloat(p[1]));
+  const minH=Math.min(...vals)-0.05,maxH=Math.max(...vals)+0.05;
+  const toY=h=>H-((h-minH)/(maxH-minH))*(H-14)-4;
+  const toX=i=>(i/(series.length-1))*W;
+  ctx.clearRect(0,0,W,H);
+  ctx.beginPath();ctx.moveTo(toX(0),H);
+  vals.forEach((h,i)=>ctx.lineTo(toX(i),toY(h)));
+  ctx.lineTo(toX(vals.length-1),H);ctx.closePath();
+  ctx.fillStyle='rgba(0,180,216,0.15)';ctx.fill();
+  ctx.beginPath();vals.forEach((h,i)=>i===0?ctx.moveTo(toX(i),toY(h)):ctx.lineTo(toX(i),toY(h)));
+  ctx.strokeStyle='#00b4d8';ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(toX(currentIdx),toY(vals[currentIdx]),5,0,Math.PI*2);
+  ctx.fillStyle='#00b4d8';ctx.fill();ctx.strokeStyle='#0d1b2a';ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle='#6b8fa8';ctx.font='9px Inter,sans-serif';ctx.textAlign='center';
+  [0,Math.floor(series.length/4),Math.floor(series.length/2),Math.floor(series.length*3/4),series.length-1].forEach(i=>{
+    const t=new Date(series[i][0]);
+    ctx.fillText(t.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}),toX(i),H-1);
+  });
+}
+
+async function fetchTemp(){
+  try{
+    const d=await(await fetch(`https://api.open-meteo.com/v1/forecast?latitude=-34.47&longitude=-58.50&current=temperature_2m,apparent_temperature&timezone=America%2FArgentina%2FBuenos_Aires`)).json();
+    document.getElementById('temp').textContent=Math.round(d.current.temperature_2m);
+    document.getElementById('feelsLike').textContent=`Sensación ${Math.round(d.current.apparent_temperature)}°C`;
+    document.getElementById('tempBadge').textContent='● Open-Meteo';
+    document.getElementById('tempBadge').className='source-badge badge-fc';
+  }catch(e){}
+}
+
+function updateCompass(deg, windKt){
+  // La flecha apunta HACIA donde viene el viento (de donde sopla)
+  // Rotamos la flecha: 0° = norte, 90° = este, etc.
+  const arrow = document.getElementById('compassArrow');
+  // La flecha SVG apunta arriba por defecto (N), rotamos deg grados
+  arrow.style.transform = `translate(-50%, -100%) rotate(${deg}deg)`;
+
+  const card = dirLabel(deg);
+  document.getElementById('dirCardinal').textContent = card;
+  document.getElementById('dirDegrees').textContent = `${Math.round(deg)}°`;
+
+  // Descripción para windsurfistas
+  let desc = '';
+  if(!isNaN(windKt)){
+    if(windKt < 5) desc = 'Viento muy débil';
+    else if(windKt < 10) desc = 'Viento flojo';
+    else if(windKt < 15) desc = 'Viento moderado';
+    else if(windKt < 20) desc = 'Buen viento';
+    else if(windKt < 25) desc = 'Viento fuerte';
+    else desc = 'Viento muy fuerte';
+  }
+  document.getElementById('dirDesc').textContent = desc ? `${desc} desde el ${card}` : `Desde el ${card}`;
+}
+
+async function fetchFallback(){
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=-34.4683&longitude=-58.5183&current=temperature_2m,apparent_temperature,windspeed_10m,windgusts_10m,winddirection_10m&wind_speed_unit=ms&timezone=America%2FArgentina%2FBuenos_Aires`;
+    const d=await(await fetch(url)).json();
+    const c=d.current;
+    const wind=(c.windspeed_10m*1.944).toFixed(1);
+    const gusts=(c.windgusts_10m*1.944).toFixed(1);
+    const dir=c.winddirection_10m;
+    document.getElementById('windSpeed').textContent=wind;
+    document.getElementById('windGusts').textContent=gusts;
+    document.getElementById('gustsDiff').textContent=`+${(parseFloat(gusts)-parseFloat(wind)).toFixed(1)} sobre media`;
+    document.getElementById('temp').textContent=Math.round(c.temperature_2m);
+    document.getElementById('feelsLike').textContent=`Sensación ${Math.round(c.apparent_temperature)}°C`;
+    document.getElementById('lastUpdateVal').textContent=new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('lastUpdateSub').textContent='pronóstico';
+    ['windBadge','gustBadge','tempBadge','updateBadge'].forEach(id=>{
+      document.getElementById(id).textContent='⚠ Pronóstico';
+      document.getElementById(id).className='source-badge badge-fc';
+    });
+    updateCompass(dir, parseFloat(wind));
+    actualizarSemaforo(parseFloat(wind), parseFloat(gusts));
+  }catch(e){ document.getElementById('semLabel').textContent='Sin datos'; }
+}
+
+function actualizarSemaforo(wind,gusts){
+  const dot=document.getElementById('semDot');
+  const lbl=document.getElementById('semLabel');
+  if(isNaN(wind)){dot.className='semaforo-dot';lbl.textContent='Sin datos';return;}
+  if(wind>30||gusts>35){dot.className='semaforo-dot rojo';lbl.textContent='No apto';}
+  else if(wind<5||wind>22||gusts>28){dot.className='semaforo-dot amarillo';lbl.textContent='Condiciones regulares';}
+  else{dot.className='semaforo-dot verde';lbl.textContent='Buenas condiciones';}
+}
+
+// ── Bitácora ──────────────────────────────────────────────────
+function cargarSesiones(){try{return JSON.parse(localStorage.getItem('ombu_sesiones')||'[]');}catch{return[];}}
+function guardarEnStorage(s){try{localStorage.setItem('ombu_sesiones',JSON.stringify(s));}catch{}}
+function guardarSesion(){
+  const fecha=document.getElementById('logFecha').value;
+  if(!fecha){alert('Seleccioná una fecha');return;}
+  const sesiones=cargarSesiones();
+  sesiones.unshift({id:Date.now(),fecha,vela:document.getElementById('logVela').value,viento:document.getElementById('logViento').value,duracion:document.getElementById('logDuracion').value,notas:document.getElementById('logNotas').value});
+  guardarEnStorage(sesiones);
+  ['logVela','logViento','logDuracion','logNotas'].forEach(id=>document.getElementById(id).value='');
+  renderSesiones();
+}
+function eliminarSesion(id){guardarEnStorage(cargarSesiones().filter(s=>s.id!==id));renderSesiones();}
+function renderSesiones(){
+  const sesiones=cargarSesiones();
+  const c=document.getElementById('logEntries');
+  if(!sesiones.length){c.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Todavía no hay sesiones registradas.</div>';return;}
+  c.innerHTML=sesiones.map(s=>{
+    const f=s.fecha?new Date(s.fecha+'T12:00:00').toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short',year:'numeric'}):'—';
+    return`<div class="log-entry"><div class="log-entry-info"><div class="log-entry-date">${f}</div><div class="log-entry-main">${s.duracion?s.duracion+' en el agua':'Sesión registrada'}</div>${s.notas?`<div class="log-entry-note">${s.notas}</div>`:''}<div class="log-entry-tags">${s.vela?`<span class="tag">🎿 ${s.vela} m²</span>`:''} ${s.viento?`<span class="tag">💨 ${s.viento} kt</span>`:''}</div></div><button class="log-delete" onclick="eliminarSesion(${s.id})">✕</button></div>`;
+  }).join('');
+}
+
+// ── Mareas (Open-Meteo Marine) ────────────────────────────────
+async function fetchMareas(){
+  try{
+    const url=`https://marine-api.open-meteo.com/v1/marine?latitude=-34.47&longitude=-58.50&hourly=sea_level_height_msl&timezone=America%2FArgentina%2FBuenos_Aires&forecast_days=1`;
+    const d=await(await fetch(url)).json();
+    const heights=d.hourly.sea_level_height_msl;
+    const times=d.hourly.time;
+
+    // Hora actual
+    const now=new Date();
+    const currentHour=now.getHours();
+    const currentHeight=heights[currentHour];
+
+    // Tendencia: comparar con hora anterior y siguiente
+    const prev=heights[Math.max(0,currentHour-1)];
+    const next=heights[Math.min(23,currentHour+1)];
+    let trend='→ Estable';
+    if(next-currentHeight > 0.02) trend='↑ Subiendo';
+    else if(currentHeight-next > 0.02) trend='↓ Bajando';
+
+    document.getElementById('tideHeight').textContent=currentHeight!=null?currentHeight.toFixed(2):'—';
+    document.getElementById('tideTrend').textContent=trend.split(' ')[0];
+    document.getElementById('tideTrend').title=trend;
+
+    // Próximo extremo
+    let nextExtremeVal=null, nextExtremeHour=null, nextExtremeType=null;
+    const rising = next > currentHeight;
+    for(let h=currentHour+1;h<24;h++){
+      if(heights[h]==null) continue;
+      const isLocal = rising
+        ? (heights[h]<(heights[h-1]??heights[h]))  // pasó máximo
+        : (heights[h]>(heights[h-1]??heights[h])); // pasó mínimo
+      if(isLocal){
+        nextExtremeVal=heights[h-1];
+        nextExtremeHour=h-1;
+        nextExtremeType=rising?'Pleamar':'Bajamar';
+        break;
+      }
+    }
+    if(nextExtremeHour!=null){
+      document.getElementById('tideNext').textContent=nextExtremeVal.toFixed(2)+' m';
+      document.getElementById('tideNextLabel').textContent=`${nextExtremeType} ~${nextExtremeHour}:00`;
+    }
+
+    // Gráfico simple con Canvas
+    drawTideChart(heights, currentHour);
+
+  }catch(e){ console.warn('Mareas error:',e); }
+}
+
+function drawTideChart(heights, currentHour){
+  const canvas=document.getElementById('tideChart');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  canvas.width=canvas.offsetWidth*window.devicePixelRatio||canvas.offsetWidth;
+  canvas.height=80*window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio,window.devicePixelRatio);
+  const W=canvas.offsetWidth, H=80;
+
+  const valid=heights.filter(h=>h!=null);
+  const minH=Math.min(...valid)-0.1;
+  const maxH=Math.max(...valid)+0.1;
+  const toY=h=>H-((h-minH)/(maxH-minH))*(H-10)-5;
+  const toX=i=>(i/23)*W;
+
+  ctx.clearRect(0,0,W,H);
+
+  // Área rellena
+  ctx.beginPath();
+  ctx.moveTo(toX(0),H);
+  heights.forEach((h,i)=>{ if(h!=null) ctx.lineTo(toX(i),toY(h)); });
+  ctx.lineTo(toX(23),H);
+  ctx.closePath();
+  ctx.fillStyle='rgba(0,180,216,0.15)';
+  ctx.fill();
+
+  // Línea
+  ctx.beginPath();
+  heights.forEach((h,i)=>{ if(h!=null){ i===0?ctx.moveTo(toX(i),toY(h)):ctx.lineTo(toX(i),toY(h)); }});
+  ctx.strokeStyle='#00b4d8';
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  // Marcador hora actual
+  const cx=toX(currentHour);
+  const cy=toY(heights[currentHour]||0);
+  ctx.beginPath();
+  ctx.arc(cx,cy,5,0,Math.PI*2);
+  ctx.fillStyle='#00b4d8';
+  ctx.fill();
+  ctx.strokeStyle='#0d1b2a';
+  ctx.lineWidth=2;
+  ctx.stroke();
+
+  // Etiquetas de hora
+  ctx.fillStyle='#6b8fa8';
+  ctx.font='9px Inter,sans-serif';
+  ctx.textAlign='center';
+  [0,6,12,18,23].forEach(h=>{ ctx.fillText(h+':00',toX(h),H-1); });
+}
+
+// ── Init ──────────────────────────────────────────────────────
+document.getElementById('logFecha').value=new Date().toISOString().split('T')[0];
+fetchStation();
+setInterval(fetchStation, 5*60*1000);
+fetchNorden();
+setInterval(fetchNorden, 10*60*1000);
+fetchMareas();
+setInterval(fetchMareas, 30*60*1000);
+renderSesiones();
+</script>
+</body>
+</html>
